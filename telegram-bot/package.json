@@ -1,0 +1,38 @@
+{
+  "name": "homeserver-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for home server management",
+  "main": "dist/bot.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/bot.js",
+    "dev": "ts-node src/bot.ts",
+    "watch": "ts-node --watch src/bot.ts",
+    "bot:start": "./scripts/start.sh",
+    "bot:stop": "./scripts/stop.sh",
+    "bot:restart": "./scripts/restart.sh",
+    "bot:status": "./scripts/status.sh",
+    "bot:logs": "./scripts/logs.sh"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "axios": "^1.7.7",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.4",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.6.2",
+    "ts-node": "^10.9.2"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "homeserver",
+    "qbittorrent",
+    "jackett"
+  ],
+  "author": "crazytimon",
+  "license": "MIT"
+}
