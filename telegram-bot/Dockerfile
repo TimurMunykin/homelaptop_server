@@ -6,8 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including dev for build)
+RUN npm ci
 
 # Copy source code
 COPY src/ ./src/
@@ -16,7 +16,7 @@ COPY src/ ./src/
 RUN npm run build
 
 # Remove dev dependencies and source files to reduce image size
-RUN npm ci --only=production && rm -rf src/ tsconfig.json
+RUN npm ci --omit=dev && rm -rf src/ tsconfig.json node_modules/@types
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S botuser -u 1001 -G nodejs

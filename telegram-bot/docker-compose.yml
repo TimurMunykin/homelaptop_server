@@ -1,20 +1,73 @@
-version: '3.8'
-
 services:
+  qbittorrent:
+    image: qbittorrentofficial/qbittorrent-nox:latest
+    container_name: homeserver-qbittorrent
+    restart: unless-stopped
+    environment:
+      - QBT_LEGAL_NOTICE=confirm
+      - QBT_WEBUI_PORT=8081
+    volumes:
+      - ./data/qbittorrent/config:/config
+      - ./data/downloads:/downloads
+    network_mode: host
+
+  qbittorrent-setup:
+    image: alpine:latest
+    container_name: homeserver-qbittorrent-setup
+    depends_on:
+      - qbittorrent
+    volumes:
+      - ./setup-qbittorrent.sh:/setup.sh:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    network_mode: host
+    command: ["/bin/sh", "/setup.sh"]
+    restart: "no"
+
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: homeserver-jackett
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Moscow
+      - AUTO_UPDATE=true
+    volumes:
+      - ./data/jackett/config:/config
+      - ./data/downloads:/downloads
+    ports:
+      - "9118:9117"  # Changed to avoid conflict with existing Jackett
+    networks:
+      - homeserver-network
+
+  torrserver:
+    image: ghcr.io/yourok/torrserver:latest
+    container_name: homeserver-torrserver
+    restart: unless-stopped
+    ports:
+      - "8091:8090"  # Changed to avoid conflict with existing TorrServer
+    volumes:
+      - ./data/torrserver:/opt/ts
+    networks:
+      - homeserver-network
+
   telegram-bot:
     build: .
     container_name: homeserver-telegram-bot
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+      - QBITTORRENT_URL=http://192.168.31.36:8081
     env_file:
       - .env
-    network_mode: host  # Используем host network для доступа к существующим сервисам
+    depends_on:
+      - qbittorrent
+      - qbittorrent-setup
+      - torrserver
+    network_mode: host
     volumes:
       - ./logs:/app/logs
-    healthcheck:
-      test: ["CMD", "node", "-e", "console.log('Bot is running')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+
+networks:
+  homeserver-network:
+    driver: bridge

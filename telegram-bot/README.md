@@ -21,52 +21,70 @@ Telegram bot для управления домашним сервером с и
 
 ## Установка и настройка
 
-### 1. Подготовка
+### Быстрый старт с Docker Compose (рекомендуется)
 
 ```bash
-# Клонировать репозиторий
+# 1. Клонировать репозиторий
 git clone <repo-url>
 cd telegram-bot
 
+# 2. Настроить окружение
+cp .env.example .env
+nano .env  # Указать BOT_TOKEN и ALLOWED_CHAT_IDS
+
+# 3. Запустить все сервисы
+docker-compose up -d
+```
+
+Это запустит полную инфраструктуру:
+- **qBittorrent** (порт 8080) - торрент-клиент  
+- **Jackett** (порт 9117) - прокси для торрент-трекеров
+- **TorrServer** (порт 8090) - стриминг торрентов
+- **Telegram Bot** - ваш бот для управления
+
+### Настройка после запуска
+
+1. **qBittorrent**: Откройте http://localhost:8080
+   - Логин: `admin`, пароль: `adminadmin`
+   - Смените пароль в настройках
+
+2. **Jackett**: Откройте http://localhost:9117  
+   - Добавьте индексаторы (например, RuTracker)
+   - Скопируйте API ключ в .env файл (`JACKETT_API_KEY`)
+
+3. **Перезапустите бот**: `docker-compose restart telegram-bot`
+
+### Разработка (локальная установка)
+
+```bash
 # Установить зависимости
 npm install
-```
 
-### 2. Настройка окружения
-
-```bash
-# Скопировать пример конфигурации
-cp .env.example .env
-
-# Отредактировать конфигурацию
-nano .env
-```
-
-Необходимо заполнить:
-- `BOT_TOKEN` - токен Telegram бота от @BotFather
-- `ALLOWED_CHAT_IDS` - список разрешенных chat_id через запятую
-- API ключи для сервисов (опционально)
-
-### 3. Запуск
-
-#### Разработка
-```bash
+# Запуск в режиме разработки
 npm run dev
-```
 
-#### Продакшен
-```bash
+# Сборка
 npm run build
 npm start
 ```
 
-#### Docker
+### Управление Docker Compose
+
 ```bash
-# Сборка и запуск
+# Запуск всех сервисов
 docker-compose up -d
 
 # Просмотр логов
 docker-compose logs -f telegram-bot
+docker-compose logs -f qbittorrent
+docker-compose logs -f jackett
+
+# Остановка
+docker-compose down
+
+# Обновление образов
+docker-compose pull
+docker-compose up -d
 ```
 
 ## Безопасность

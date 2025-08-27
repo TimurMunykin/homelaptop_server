@@ -1,0 +1,24 @@
+services:
+  qbittorrent:
+    image: qbittorrentofficial/qbittorrent-nox:latest
+    container_name: fresh-qbittorrent
+    restart: unless-stopped
+    environment:
+      - QBT_LEGAL_NOTICE=confirm
+      - QBT_WEBUI_PORT=8082
+    volumes:
+      - ./fresh-data/config:/config
+      - ./fresh-data/downloads:/downloads
+    network_mode: host
+
+  qbittorrent-setup:
+    image: alpine:latest
+    container_name: qbittorrent-setup
+    depends_on:
+      - qbittorrent
+    volumes:
+      - ./setup-inline.sh:/setup.sh:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    network_mode: host
+    command: ["/bin/sh", "/setup.sh"]
+    restart: "no"

@@ -28,11 +28,11 @@ export class FilmRuCommand {
         return;
       }
 
-      await ctx.reply(`🎬 Ищу "${query}" на RuTracker...`);
+      await ctx.reply(`🎬 Ищу "${query}" на Rutor...`);
 
       try {
-        // Search only on RuTracker indexer
-        const results = await this.jackett.searchByIndexer('rutracker', query, 8);
+        // Search on all available indexers
+        const results = await this.jackett.search(query, 8);
 
         if (results.length === 0) {
           await ctx.reply('📭 Ничего не найдено. Попробуйте другой запрос или проверьте настройки Jackett.');
@@ -80,14 +80,14 @@ export class FilmRuCommand {
         
         // Send tips separately
         await ctx.reply(
-          `💡 Советы для лучших результатов на RuTracker:\n` +
+          `💡 Советы для лучших результатов на Rutor:\n` +
           `• Добавьте год: "Брат 1997"\n` +
           `• Укажите качество: "BluRay", "WEB-DL"\n` +
           `• Попробуйте английское название: "Matrix"`
         );
       } catch (searchError) {
         console.error('Search error:', searchError);
-        await ctx.reply('❌ Произошла ошибка при поиске. Проверьте настройки RuTracker в Jackett.');
+        await ctx.reply('❌ Произошла ошибка при поиске. Проверьте настройки Rutor в Jackett.');
       }
     } catch (error) {
       console.error('FilmRu command error:', error);
