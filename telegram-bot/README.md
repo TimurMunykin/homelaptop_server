@@ -1,58 +1,57 @@
 # HomeServer Telegram Bot
 
-Telegram bot для управления домашним сервером с интеграцией qBittorrent, Jackett и Matrix.
+Quick setup guide for portable homeserver management bot.
 
-## Возможности
+## 1. Create Telegram Bot
 
-- 📊 **Мониторинг статуса** всех сервисов
-- 🌊 **Управление торрентами** через qBittorrent
-- 🔍 **Поиск торрентов** через Jackett
-- 💻 **Системная информация** (CPU, RAM, диск)
-- 🏠 **Статистика Matrix сервера**
+1. Message [@BotFather](https://t.me/BotFather) in Telegram
+2. Send `/newbot`
+3. Follow prompts to create bot
+4. Copy the **BOT_TOKEN**
 
-## Команды бота
-
-- `/start` - Приветствие и список команд
-- `/help` - Помощь по командам
-- `/status` - Статус всех сервисов
-- `/torrents` - Активные торренты
-- `/search <query>` - Поиск торрентов
-- `/system` - Системная информация
-
-## Установка и настройка
-
-### Быстрый старт с Docker Compose (рекомендуется)
+## 2. Setup
 
 ```bash
-# 1. Клонировать репозиторий
-git clone <repo-url>
+# Clone repository
+git clone <repository-url>
 cd telegram-bot
 
-# 2. Настроить окружение
+# Copy and edit config
 cp .env.example .env
-nano .env  # Указать BOT_TOKEN и ALLOWED_CHAT_IDS
+nano .env  # Add your BOT_TOKEN
 
-# 3. Запустить все сервисы
-docker-compose up -d
+# Initialize services
+chmod +x init.sh
+./init.sh
+
+# Start all services
+docker compose up -d
 ```
 
-Это запустит полную инфраструктуру:
-- **qBittorrent** (порт 8080) - торрент-клиент  
-- **Jackett** (порт 9117) - прокси для торрент-трекеров
-- **TorrServer** (порт 8090) - стриминг торрентов
-- **Telegram Bot** - ваш бот для управления
+## 3. Get Chat ID
 
-### Настройка после запуска
+1. Start your bot in Telegram
+2. Send `/chatid` command to bot
+3. Copy the **Chat ID** number
+4. Add it to `.env` file: `ALLOWED_CHAT_IDS=your_chat_id`
+5. Restart bot: `docker compose restart telegram-bot`
 
-1. **qBittorrent**: Откройте http://localhost:8080
-   - Логин: `admin`, пароль: `adminadmin`
-   - Смените пароль в настройках
+## 4. Available Commands
 
-2. **Jackett**: Откройте http://localhost:9117  
-   - Добавьте индексаторы (например, RuTracker)
-   - Скопируйте API ключ в .env файл (`JACKETT_API_KEY`)
+- `/status` - Services status
+- `/search <query>` - Search torrents
+- `/trackers` - Show indexers
+- `/torrents` - Active downloads
+- `/system` - System info
+- `/chatid` - Get your chat ID
 
-3. **Перезапустите бот**: `docker-compose restart telegram-bot`
+## Services
+
+- **qBittorrent**: http://localhost:8081 (admin/adminpass)
+- **Prowlarr**: http://localhost:9696 (API key auto-generated)
+- **TorrServer**: http://localhost:8090
+
+All services are configured automatically with init script.
 
 ### Разработка (локальная установка)
 
