@@ -16,6 +16,9 @@ export interface IndexerResult {
   size: string;
   publishDate: string;
   category: string;
+  indexer: string;
+  infoUrl?: string;
+  guid: string;
 }
 
 export interface ProwlarrIndexer {
@@ -90,7 +93,10 @@ export class ProwlarrService {
         leechers: item.leechers || 0,
         size: this.formatSize(item.size),
         publishDate: new Date(item.publishDate).toLocaleDateString(),
-        category: item.categories?.[0]?.name || 'Unknown',
+        category: item.categories?.[0]?.name || item.categoryDesc || 'Unknown',
+        indexer: item.indexer || 'Unknown',
+        infoUrl: item.infoUrl || '',
+        guid: item.guid || '',
       }));
     } catch (error) {
       console.error('Prowlarr search error:', error);

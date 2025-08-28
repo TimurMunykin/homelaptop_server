@@ -94,8 +94,66 @@ class HomeServerBot {
       try {
         const callbackData = (ctx.callbackQuery as any).data;
         
-        // Handle download callbacks (from filmru search)
-        if (callbackData?.startsWith('download:')) {
+        // Handle search result callbacks
+        if (callbackData?.startsWith('add_torrent:')) {
+          await ctx.answerCbQuery('🔄 Adding torrent to qBittorrent...');
+          
+          const resultKey = callbackData.replace('add_torrent:', '');
+          const searchResults = (global as any).searchResults;
+          
+          if (searchResults && searchResults.has(resultKey)) {
+            const resultData = searchResults.get(resultKey);
+            const success = await this.torrentsCommand['qbittorrent'].addTorrent(resultData.downloadUrl);
+            
+            if (success) {
+              await ctx.editMessageReplyMarkup({ 
+                inline_keyboard: [[
+                  { text: '✅ Added to qBittorrent', callback_data: 'noop' }
+                ]]
+              });
+              await ctx.reply(`✅ Torrent "${resultData.title.substring(0, 50)}..." added to qBittorrent!`);
+              searchResults.delete(resultKey);
+            } else {
+              await ctx.answerCbQuery('❌ Failed to add torrent');
+              await ctx.reply('❌ Error adding torrent. Check qBittorrent settings.');
+            }
+          } else {
+            await ctx.answerCbQuery('❌ Search result not found');
+          }
+        }
+        
+        else if (callbackData?.startsWith('copy_magnet:')) {
+          const resultKey = callbackData.replace('copy_magnet:', '');
+          const searchResults = (global as any).searchResults;
+          
+          if (searchResults && searchResults.has(resultKey)) {
+            const resultData = searchResults.get(resultKey);
+            await ctx.answerCbQuery('📋 Magnet link copied!');
+            await ctx.reply(`📋 Magnet link:\n\`${resultData.downloadUrl}\``, { parse_mode: 'Markdown' });
+          } else {
+            await ctx.answerCbQuery('❌ Search result not found');
+          }
+        }
+        
+        else if (callbackData?.startsWith('copy_info:')) {
+          const resultKey = callbackData.replace('copy_info:', '');
+          const searchResults = (global as any).searchResults;
+          
+          if (searchResults && searchResults.has(resultKey)) {
+            const resultData = searchResults.get(resultKey);
+            if (resultData.infoUrl) {
+              await ctx.answerCbQuery('🌐 Info URL copied!');
+              await ctx.reply(`🌐 Torrent info URL:\n${resultData.infoUrl}`);
+            } else {
+              await ctx.answerCbQuery('❌ No info URL available');
+            }
+          } else {
+            await ctx.answerCbQuery('❌ Search result not found');
+          }
+        }
+        
+        // Handle download callbacks (from filmru search)  
+        else if (callbackData?.startsWith('download:')) {
           await ctx.answerCbQuery('🔄 Добавляем торрент в qBittorrent...');
           
           const torrentKey = callbackData.replace('download:', '');

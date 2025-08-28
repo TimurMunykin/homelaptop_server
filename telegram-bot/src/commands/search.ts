@@ -36,61 +36,69 @@ export class SearchCommand {
         return;
       }
 
-      let responseMessage = `🔍 **Search Results for:** "${query}"\n\n`;
+      // Store search results in memory for callback handling
+      if (!(global as any).searchResults) {
+        (global as any).searchResults = new Map();
+      }
 
-      results.slice(0, 8).forEach((result, index) => {
-        const title = result.title.length > 50 ? result.title.substring(0, 47) + '...' : result.title;
-        responseMessage += `${index + 1}. ${title}\n`;
-        responseMessage += `📁 ${result.size} | 🌱 ${result.seeders} | 👥 ${result.leechers}\n`;
-        responseMessage += `📂 ${result.category} | 📅 ${result.publishDate}\n`;
-        responseMessage += `🔗 ${result.downloadUrl}\n\n`;
-      });
+      const limitedResults = results.slice(0, 8);
+      
+      for (let i = 0; i < limitedResults.length; i++) {
+        const result = limitedResults[i];
+        const title = result.title.length > 60 ? result.title.substring(0, 57) + '...' : result.title;
+        
+        let message = `🔍 **${title}**\n\n`;
+        message += `📁 Size: ${result.size}\n`;
+        message += `🌱 Seeders: ${result.seeders} | 👥 Leechers: ${result.leechers}\n`;
+        message += `📂 Category: ${result.category}\n`;
+        message += `🔍 Indexer: ${result.indexer}\n`;
+        message += `📅 Date: ${result.publishDate}`;
 
-      responseMessage += `📊 Found ${results.length} results`;
+        // Generate unique key for this search result
+        const resultKey = `${ctx.from?.id}_${Date.now()}_${i}`;
+        (global as any).searchResults.set(resultKey, {
+          title: result.title,
+          downloadUrl: result.downloadUrl,
+          infoUrl: result.infoUrl,
+          guid: result.guid
+        });
 
-      // Split message if it's too long for Telegram
-      if (responseMessage.length > 4000) {
-        const messages = this.splitMessage(responseMessage);
-        for (const msg of messages) {
-          await ctx.reply(msg, { parse_mode: 'Markdown' });
-          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between messages
+        // Create inline keyboard with action buttons
+        const keyboard = {
+          inline_keyboard: [[
+            { 
+              text: '📥 Add to qBittorrent', 
+              callback_data: `add_torrent:${resultKey}` 
+            }
+          ], [
+            { 
+              text: '🔗 Copy Magnet', 
+              callback_data: `copy_magnet:${resultKey}` 
+            },
+            { 
+              text: '🌐 Copy Info URL', 
+              callback_data: `copy_info:${resultKey}` 
+            }
+          ]]
+        };
+
+        await ctx.reply(message, { 
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
+        
+        // Small delay between messages to avoid rate limiting
+        if (i < limitedResults.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
-      } else {
-        await ctx.reply(responseMessage, { parse_mode: 'Markdown' });
+      }
+
+      if (limitedResults.length > 0) {
+        await ctx.reply(`📊 Showing ${limitedResults.length} of ${results.length} results`);
       }
     } catch (error) {
       console.error('Search command error:', error);
       await ctx.reply('❌ Failed to search torrents. Make sure Prowlarr is configured properly.');
     }
-  }
-
-  private splitMessage(inputMessage: string): string[] {
-    const messages: string[] = [];
-    const lines = inputMessage.split('\n\n');
-    let currentMessage = '';
-
-    for (const line of lines) {
-      if ((currentMessage + line + '\n\n').length > 4000) {
-        if (currentMessage) {
-          messages.push(currentMessage.trim());
-          currentMessage = '';
-        }
-        
-        // If single line is too long, truncate it
-        if (line.length > 4000) {
-          messages.push(line.substring(0, 3990) + '...');
-        } else {
-          currentMessage = line + '\n\n';
-        }
-      } else {
-        currentMessage += line + '\n\n';
-      }
-    }
-
-    if (currentMessage.trim()) {
-      messages.push(currentMessage.trim());
-    }
-
-    return messages;
   }
 }
