@@ -1,21 +1,21 @@
 import { Context } from 'telegraf';
-import { JackettService } from '../services/jackett';
+import { ProwlarrService } from '../services/prowlarr';
 
 export class TrackersCommand {
-  private jackett: JackettService;
+  private prowlarr: ProwlarrService;
 
   constructor() {
-    this.jackett = new JackettService();
+    this.prowlarr = new ProwlarrService();
   }
 
   async execute(ctx: Context): Promise<void> {
     try {
       await ctx.reply('🔍 Getting your configured trackers...');
 
-      const indexers = await this.jackett.getIndexers();
+      const indexers = await this.prowlarr.getIndexers();
 
       if (indexers.length === 0) {
-        await ctx.reply('📭 No configured trackers found.\n\nTo add trackers:\n1. Open http://192.168.31.36:9117\n2. Click "Add indexer"\n3. Configure your preferred trackers');
+        await ctx.reply('📭 No configured trackers found.\n\nTo add trackers:\n1. Open http://localhost:9696\n2. Go to Settings → Indexers\n3. Click "+" to add new indexers');
         return;
       }
 
@@ -23,8 +23,9 @@ export class TrackersCommand {
 
       indexers.forEach((indexer, index) => {
         const name = indexer.name.length > 30 ? indexer.name.substring(0, 27) + '...' : indexer.name;
-        message += `${index + 1}. **${name}**\n`;
-        message += `   ID: \`${indexer.id}\`\n\n`;
+        const status = indexer.enable ? '🟢' : '🔴';
+        message += `${index + 1}. ${status} **${name}**\n`;
+        message += `   ID: \`${indexer.id}\` | Priority: ${indexer.priority}\n\n`;
       });
       
       message += `💡 **Usage:**\n`;
@@ -43,7 +44,7 @@ export class TrackersCommand {
       }
     } catch (error) {
       console.error('Trackers command error:', error);
-      await ctx.reply('❌ Failed to get trackers list. Try again or check Jackett configuration.');
+      await ctx.reply('❌ Failed to get trackers list. Try again or check Prowlarr configuration.');
     }
   }
 

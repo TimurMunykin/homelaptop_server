@@ -1,11 +1,10 @@
-import { Telegraf, Context } from 'telegraf';
+import { Telegraf } from 'telegraf';
 import { config, validateConfig } from './config';
 import { StatusCommand } from './commands/status';
 import { TorrentsCommand } from './commands/torrents';
 import { SearchCommand } from './commands/search';
 import { SystemCommand } from './commands/system';
 import { TrackersCommand } from './commands/trackers';
-import { FilmRuCommand } from './commands/filmru';
 
 class HomeServerBot {
   private bot: Telegraf;
@@ -14,7 +13,6 @@ class HomeServerBot {
   private searchCommand: SearchCommand;
   private systemCommand: SystemCommand;
   private trackersCommand: TrackersCommand;
-  private filmruCommand: FilmRuCommand;
 
   constructor() {
     validateConfig();
@@ -25,7 +23,6 @@ class HomeServerBot {
     this.searchCommand = new SearchCommand();
     this.systemCommand = new SystemCommand();
     this.trackersCommand = new TrackersCommand();
-    this.filmruCommand = new FilmRuCommand();
     
     this.setupMiddleware();
     this.setupCommands();
@@ -60,8 +57,7 @@ class HomeServerBot {
         `Available commands:\n` +
         `/status - Show services status\n` +
         `/torrents - Show active torrents\n` +
-        `/search <query> - Search torrents via Jackett\n` +
-        `/filmru <название> - Поиск русских фильмов\n` +
+        `/search <query> - Search torrents via Prowlarr\n` +
         `/trackers - Show available trackers\n` +
         `/system - Show system information\n` +
         `/chatid - Show your Chat ID for configuration`
@@ -73,8 +69,7 @@ class HomeServerBot {
         `🆘 Available commands:\n\n` +
         `/status - Show all services status\n` +
         `/torrents - Show active torrents in qBittorrent\n` +
-        `/search <query> - Search for torrents via Jackett\n` +
-        `/filmru <название> - Поиск русских фильмов\n` +
+        `/search <query> - Search for torrents via Prowlarr\n` +
         `/trackers - Show available trackers list\n` +
         `/system - Show system information (CPU, RAM, disk)\n` +
         `/chatid - Show your Chat ID for configuration\n\n` +
@@ -86,7 +81,6 @@ class HomeServerBot {
     this.bot.command('torrents', (ctx) => this.torrentsCommand.execute(ctx));
     this.bot.command('search', (ctx) => this.searchCommand.execute(ctx));
     this.bot.command('trackers', (ctx) => this.trackersCommand.execute(ctx));
-    this.bot.command('filmru', (ctx) => this.filmruCommand.execute(ctx));
     this.bot.command('system', (ctx) => this.systemCommand.execute(ctx));
     this.bot.command('chatid', (ctx) => {
       const chatId = ctx.chat?.id;

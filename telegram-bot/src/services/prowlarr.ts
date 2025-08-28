@@ -18,6 +18,15 @@ export interface IndexerResult {
   category: string;
 }
 
+export interface ProwlarrIndexer {
+  id: number;
+  name: string;
+  enable: boolean;
+  redirect: boolean;
+  priority: number;
+  description: string;
+}
+
 export class ProwlarrService {
   private client: AxiosInstance;
   private baseUrl: string;
@@ -71,21 +80,38 @@ export class ProwlarrService {
       const response = await this.client.get('/api/v1/search', {
         params: {
           query: query,
-          type: 'search',
         },
       });
 
       return response.data.map((item: any) => ({
         title: item.title,
-        downloadUrl: item.downloadUrl || item.magnet,
+        downloadUrl: item.magnetUrl || item.guid || '',
         seeders: item.seeders || 0,
-        leechers: item.peers || 0,
+        leechers: item.leechers || 0,
         size: this.formatSize(item.size),
         publishDate: new Date(item.publishDate).toLocaleDateString(),
-        category: item.categories?.[0] || 'Unknown',
+        category: item.categories?.[0]?.name || 'Unknown',
       }));
     } catch (error) {
       console.error('Prowlarr search error:', error);
+      return [];
+    }
+  }
+
+  async getIndexers(): Promise<ProwlarrIndexer[]> {
+    try {
+      const response = await this.client.get('/api/v1/indexer');
+      
+      return response.data.map((indexer: any) => ({
+        id: indexer.id,
+        name: indexer.name || 'Unknown',
+        enable: indexer.enable || false,
+        redirect: indexer.redirect || false,
+        priority: indexer.priority || 0,
+        description: indexer.description || '',
+      }));
+    } catch (error) {
+      console.error('Prowlarr getIndexers error:', error);
       return [];
     }
   }

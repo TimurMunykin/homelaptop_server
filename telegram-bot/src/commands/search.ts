@@ -1,11 +1,11 @@
 import { Context } from 'telegraf';
-import { JackettService } from '../services/jackett';
+import { ProwlarrService } from '../services/prowlarr';
 
 export class SearchCommand {
-  private jackett: JackettService;
+  private prowlarr: ProwlarrService;
 
   constructor() {
-    this.jackett = new JackettService();
+    this.prowlarr = new ProwlarrService();
   }
 
   async execute(ctx: Context): Promise<void> {
@@ -29,7 +29,7 @@ export class SearchCommand {
 
       await ctx.reply(`🔍 Searching for: "${query}"...`);
 
-      const results = await this.jackett.search(query, 8);
+      const results = await this.prowlarr.search(query);
 
       if (results.length === 0) {
         await ctx.reply('📭 No results found for your search query.');
@@ -38,8 +38,12 @@ export class SearchCommand {
 
       let responseMessage = `🔍 **Search Results for:** "${query}"\n\n`;
 
-      results.forEach((result, index) => {
-        responseMessage += this.jackett.formatSearchResult(result, index) + '\n\n';
+      results.slice(0, 8).forEach((result, index) => {
+        const title = result.title.length > 50 ? result.title.substring(0, 47) + '...' : result.title;
+        responseMessage += `${index + 1}. ${title}\n`;
+        responseMessage += `📁 ${result.size} | 🌱 ${result.seeders} | 👥 ${result.leechers}\n`;
+        responseMessage += `📂 ${result.category} | 📅 ${result.publishDate}\n`;
+        responseMessage += `🔗 ${result.downloadUrl}\n\n`;
       });
 
       responseMessage += `📊 Found ${results.length} results`;
@@ -56,7 +60,7 @@ export class SearchCommand {
       }
     } catch (error) {
       console.error('Search command error:', error);
-      await ctx.reply('❌ Failed to search torrents. Make sure Jackett is configured properly.');
+      await ctx.reply('❌ Failed to search torrents. Make sure Prowlarr is configured properly.');
     }
   }
 
