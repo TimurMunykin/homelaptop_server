@@ -25,9 +25,15 @@ This is a homeserver management system with a Telegram bot interface that provid
 - `npm run bot:logs` or `./scripts/logs.sh` - View bot logs
 
 ### Docker Commands
-- `docker-compose up -d` - Start bot in Docker container
-- `docker-compose logs -f telegram-bot` - View Docker logs
-- `docker-compose down` - Stop Docker container
+
+**First-time setup:**
+- `./init.sh` - Initialize configs and directories
+- `docker compose up -d` - Start all services
+
+**Regular usage:**
+- `docker compose logs -f telegram-bot` - View Docker logs
+- `docker compose down` - Stop all containers
+- `docker compose restart` - Restart all services
 
 ## Architecture
 
