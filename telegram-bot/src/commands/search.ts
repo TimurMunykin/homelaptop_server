@@ -45,7 +45,29 @@ export class SearchCommand {
       
       for (let i = 0; i < limitedResults.length; i++) {
         const result = limitedResults[i];
-        const title = result.title.length > 60 ? result.title.substring(0, 57) + '...' : result.title;
+        let title = result.title.length > 60 ? result.title.substring(0, 57) + '...' : result.title;
+        
+        // Escape all markdown special characters for Telegram
+        title = title
+          .replace(/\\/g, '\\\\')  // Backslash first
+          .replace(/\*/g, '\\*')
+          .replace(/_/g, '\\_')
+          .replace(/\[/g, '\\[')
+          .replace(/\]/g, '\\]')
+          .replace(/\(/g, '\\(')
+          .replace(/\)/g, '\\)')
+          .replace(/~/g, '\\~')
+          .replace(/`/g, '\\`')
+          .replace(/>/g, '\\>')
+          .replace(/#/g, '\\#')
+          .replace(/\+/g, '\\+')
+          .replace(/-/g, '\\-')
+          .replace(/=/g, '\\=')
+          .replace(/\|/g, '\\|')
+          .replace(/\{/g, '\\{')
+          .replace(/\}/g, '\\}')
+          .replace(/\./g, '\\.')
+          .replace(/!/g, '\\!');
         
         let message = `🔍 **${title}**\n\n`;
         message += `📁 Size: ${result.size}\n`;
