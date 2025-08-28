@@ -1,0 +1,100 @@
+import axios, { AxiosInstance } from 'axios';
+import { config } from '../config';
+
+export interface ServiceStatus {
+  name: string;
+  status: 'online' | 'offline';
+  message?: string;
+  responseTime?: number;
+}
+
+export interface IndexerResult {
+  title: string;
+  downloadUrl: string;
+  seeders: number;
+  leechers: number;
+  size: string;
+  publishDate: string;
+  category: string;
+}
+
+export class ProwlarrService {
+  private client: AxiosInstance;
+  private baseUrl: string;
+  private apiKey: string;
+
+  constructor() {
+    this.baseUrl = config.services.jackett.url;
+    this.apiKey = config.services.jackett.apiKey || '';
+    
+    this.client = axios.create({
+      baseURL: this.baseUrl,
+      timeout: 10000,
+      headers: {
+        'X-Api-Key': this.apiKey,
+      },
+    });
+  }
+
+  async checkStatus(): Promise<ServiceStatus> {
+    const startTime = Date.now();
+    
+    try {
+      const response = await this.client.get('/api/v1/system/status');
+      const responseTime = Date.now() - startTime;
+      
+      if (response.status === 200) {
+        return {
+          name: 'Prowlarr',
+          status: 'online',
+          message: `Version: ${response.data.version}`,
+          responseTime,
+        };
+      }
+      
+      return {
+        name: 'Prowlarr',
+        status: 'offline',
+        message: `HTTP ${response.status}`,
+      };
+    } catch (error: any) {
+      return {
+        name: 'Prowlarr',
+        status: 'offline',
+        message: error.code || error.message,
+      };
+    }
+  }
+
+  async search(query: string): Promise<IndexerResult[]> {
+    try {
+      const response = await this.client.get('/api/v1/search', {
+        params: {
+          query: query,
+          type: 'search',
+        },
+      });
+
+      return response.data.map((item: any) => ({
+        title: item.title,
+        downloadUrl: item.downloadUrl || item.magnet,
+        seeders: item.seeders || 0,
+        leechers: item.peers || 0,
+        size: this.formatSize(item.size),
+        publishDate: new Date(item.publishDate).toLocaleDateString(),
+        category: item.categories?.[0] || 'Unknown',
+      }));
+    } catch (error) {
+      console.error('Prowlarr search error:', error);
+      return [];
+    }
+  }
+
+  private formatSize(bytes: number): string {
+    if (!bytes) return 'Unknown';
+    
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+  }
+}

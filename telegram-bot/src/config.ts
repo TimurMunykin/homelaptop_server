@@ -16,7 +16,7 @@ export const config: Config = {
     },
     jackett: {
       url: process.env.PROWLARR_URL || 'http://localhost:9696',
-      apiKey: process.env.JACKETT_API_KEY,
+      apiKey: process.env.PROWLARR_API_KEY,
     },
     matrix: {
       url: process.env.MATRIX_URL || 'http://localhost:8090',
