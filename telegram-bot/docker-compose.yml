@@ -23,22 +23,29 @@ services:
     command: ["/bin/sh", "/setup.sh"]
     restart: "no"
 
-  jackett:
-    image: lscr.io/linuxserver/jackett:latest
-    container_name: homeserver-jackett
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: homeserver-prowlarr
     restart: unless-stopped
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Moscow
-      - AUTO_UPDATE=true
     volumes:
-      - ./data/jackett/config:/config
-      - ./data/downloads:/downloads
-    ports:
-      - "9118:9117"  # Changed to avoid conflict with existing Jackett
-    networks:
-      - homeserver-network
+      - ./data/prowlarr/config:/config
+    network_mode: host
+
+  prowlarr-setup:
+    image: alpine:latest
+    container_name: homeserver-prowlarr-setup
+    depends_on:
+      - prowlarr
+    volumes:
+      - ./setup-prowlarr.sh:/setup.sh:ro
+      - ./data/prowlarr/config:/config
+    network_mode: host
+    command: ["/bin/sh", "/setup.sh"]
+    restart: "no"
 
   torrserver:
     image: ghcr.io/yourok/torrserver:latest
@@ -57,12 +64,15 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - QBITTORRENT_URL=http://192.168.31.36:8081
+      - QBITTORRENT_URL=http://localhost:8081
+      - PROWLARR_URL=http://localhost:9696
     env_file:
       - .env
     depends_on:
       - qbittorrent
       - qbittorrent-setup
+      - prowlarr
+      - prowlarr-setup
       - torrserver
     network_mode: host
     volumes:

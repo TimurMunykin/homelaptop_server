@@ -10,16 +10,16 @@ export const config: Config = {
     : [],
   services: {
     qbittorrent: {
-      url: process.env.QBITTORRENT_URL || 'http://192.168.31.36:8080',
+      url: process.env.QBITTORRENT_URL || 'http://localhost:8081',
       username: process.env.QBITTORRENT_USERNAME,
       password: process.env.QBITTORRENT_PASSWORD,
     },
     jackett: {
-      url: process.env.JACKETT_URL || 'http://192.168.31.36:9117',
+      url: process.env.PROWLARR_URL || 'http://localhost:9696',
       apiKey: process.env.JACKETT_API_KEY,
     },
     matrix: {
-      url: process.env.MATRIX_URL || 'http://192.168.31.36:8090',
+      url: process.env.MATRIX_URL || 'http://localhost:8090',
       accessToken: process.env.MATRIX_ACCESS_TOKEN,
     },
   },
