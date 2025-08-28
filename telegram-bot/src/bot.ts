@@ -40,7 +40,7 @@ class HomeServerBot {
       }
       
       if (config.allowedChatIds.length > 0 && chatId && !config.allowedChatIds.includes(chatId)) {
-        await ctx.reply('❌ Access denied. You are not authorized to use this bot.');
+        await ctx.reply('❌ Access denied. You are not authorized to use this bot.\n\n💡 Use /chatid to get your Chat ID for authorization.');
         return;
       }
       
