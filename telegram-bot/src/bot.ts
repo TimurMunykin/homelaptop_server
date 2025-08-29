@@ -101,8 +101,10 @@ class HomeServerBot {
           const resultKey = callbackData.replace('add_torrent:', '');
           const searchResults = (global as any).searchResults;
           
+          
           if (searchResults && searchResults.has(resultKey)) {
             const resultData = searchResults.get(resultKey);
+            
             const success = await this.torrentsCommand['qbittorrent'].addTorrent(resultData.downloadUrl);
             
             if (success) {
@@ -267,6 +269,55 @@ class HomeServerBot {
                 await ctx.editMessageReplyMarkup(originalKeyboard);
               }
               break;
+
+            case 'torrent_priority_max':
+              await ctx.answerCbQuery('🔼 Setting max priority...');
+              const maxPrioSuccess = await qb.setPriority(torrent.hash, 'maxPrio');
+              if (maxPrioSuccess) {
+                await ctx.reply(`✅ "${torrent.name.substring(0, 30)}..." set to max priority`);
+              } else {
+                await ctx.reply('❌ Failed to set priority');
+              }
+              break;
+
+            case 'torrent_priority_min':
+              await ctx.answerCbQuery('🔽 Setting min priority...');
+              const minPrioSuccess = await qb.setPriority(torrent.hash, 'minPrio');
+              if (minPrioSuccess) {
+                await ctx.reply(`✅ "${torrent.name.substring(0, 30)}..." set to min priority`);
+              } else {
+                await ctx.reply('❌ Failed to set priority');
+              }
+              break;
+          }
+        }
+
+        // Handle bulk operations
+        else if (callbackData?.startsWith('bulk_')) {
+          const qb = this.torrentsCommand['qbittorrent'];
+          
+          if (callbackData === 'bulk_pause_all') {
+            await ctx.answerCbQuery('⏸️ Pausing all torrents...');
+            const success = await qb.pauseAll();
+            if (success) {
+              // Get updated torrents state and create new keyboard
+              const torrents = await qb.getTorrents();
+              const newKeyboard = this.torrentsCommand['createSmartBulkKeyboard'](torrents);
+              await ctx.editMessageReplyMarkup(newKeyboard);
+            } else {
+              await ctx.reply('❌ Failed to pause all torrents');
+            }
+          } else if (callbackData === 'bulk_resume_all') {
+            await ctx.answerCbQuery('▶️ Resuming all torrents...');
+            const success = await qb.resumeAll();
+            if (success) {
+              // Get updated torrents state and create new keyboard
+              const torrents = await qb.getTorrents();
+              const newKeyboard = this.torrentsCommand['createSmartBulkKeyboard'](torrents);
+              await ctx.editMessageReplyMarkup(newKeyboard);
+            } else {
+              await ctx.reply('❌ Failed to resume all torrents');
+            }
           }
         }
         

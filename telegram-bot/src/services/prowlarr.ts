@@ -88,14 +88,14 @@ export class ProwlarrService {
 
       return response.data.map((item: any) => ({
         title: item.title,
-        downloadUrl: item.magnetUrl || item.guid || '',
+        downloadUrl: item.downloadUrl || item.magnetUrl || item.guid || '',
         seeders: item.seeders || 0,
         leechers: item.leechers || 0,
         size: this.formatSize(item.size),
         publishDate: new Date(item.publishDate).toLocaleDateString(),
         category: item.categories?.[0]?.name || item.categoryDesc || 'Unknown',
         indexer: item.indexer || 'Unknown',
-        infoUrl: item.infoUrl || '',
+        infoUrl: item.infoUrl || item.guid || '',
         guid: item.guid || '',
       }));
     } catch (error) {
