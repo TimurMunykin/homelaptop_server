@@ -121,7 +121,7 @@ export class QBittorrentService {
       await this.login();
       const formData = new URLSearchParams();
       formData.append('hashes', hash);
-      const response = await this.client.post('/api/v2/torrents/pause', formData);
+      const response = await this.client.post('/api/v2/torrents/stop', formData);
       return response.status === 200;
     } catch (error) {
       console.error('Failed to pause torrent:', error);
@@ -134,7 +134,7 @@ export class QBittorrentService {
       await this.login();
       const formData = new URLSearchParams();
       formData.append('hashes', hash);
-      const response = await this.client.post('/api/v2/torrents/resume', formData);
+      const response = await this.client.post('/api/v2/torrents/start', formData);
       return response.status === 200;
     } catch (error) {
       console.error('Failed to resume torrent:', error);
@@ -152,6 +152,60 @@ export class QBittorrentService {
       return response.status === 200;
     } catch (error) {
       console.error('Failed to delete torrent:', error);
+      return false;
+    }
+  }
+
+  async pauseAll(): Promise<boolean> {
+    try {
+      const params = new URLSearchParams();
+      params.append('hashes', 'all');
+      
+      const response = await this.client.post('/api/v2/torrents/stop', params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      return response.status === 200;
+    } catch (error) {
+      console.error('Failed to pause all torrents:', error);
+      return false;
+    }
+  }
+
+  async resumeAll(): Promise<boolean> {
+    try {
+      const params = new URLSearchParams();
+      params.append('hashes', 'all');
+      
+      const response = await this.client.post('/api/v2/torrents/start', params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      return response.status === 200;
+    } catch (error) {
+      console.error('Failed to resume all torrents:', error);
+      return false;
+    }
+  }
+
+  async setPriority(hash: string, priority: 'increase' | 'decrease' | 'maxPrio' | 'minPrio'): Promise<boolean> {
+    try {
+      const params = new URLSearchParams();
+      params.append('hashes', hash);
+      
+      // Map priority values to correct API endpoints
+      const endpointMap = {
+        'increase': '/api/v2/torrents/increasePrio',
+        'decrease': '/api/v2/torrents/decreasePrio', 
+        'maxPrio': '/api/v2/torrents/topPrio',
+        'minPrio': '/api/v2/torrents/bottomPrio'
+      };
+      
+      const endpoint = endpointMap[priority];
+      const response = await this.client.post(endpoint, params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      return response.status === 200;
+    } catch (error) {
+      console.error(`Failed to set torrent priority (${priority}):`, error);
       return false;
     }
   }

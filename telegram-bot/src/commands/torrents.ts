@@ -74,6 +74,12 @@ export class TorrentsCommand {
         await ctx.reply(totalMessage);
       }
 
+      // Add smart bulk control buttons if there are torrents
+      if (torrents.length > 0) {
+        const bulkKeyboard = this.createSmartBulkKeyboard(torrents);
+        await ctx.reply('🎛️ Bulk Operations:', { reply_markup: bulkKeyboard });
+      }
+
     } catch (error) {
       console.error('Torrents command error:', error);
       await ctx.reply('❌ Failed to fetch torrents information.');
@@ -87,6 +93,8 @@ export class TorrentsCommand {
       'completed': '✅',
       'pausedDL': '⏸️',
       'pausedUP': '⏸️',
+      'stoppedDL': '⏸️',
+      'stoppedUP': '⏸️',
       'queuedDL': '⏳',
       'queuedUP': '⏳',
       'stalledDL': '🔄',
@@ -105,20 +113,28 @@ export class TorrentsCommand {
   }
 
   private createTorrentControlKeyboard(torrent: any, torrentKey: string) {
-    const buttons = [];
+    const row1 = [];
+    const row2 = [];
     
     // Pause/Resume button based on state
     if (torrent.state === 'downloading' || torrent.state === 'uploading' || torrent.state === 'queuedDL' || torrent.state === 'queuedUP') {
-      buttons.push({ text: '⏸️ Пауза', callback_data: `torrent_pause:${torrentKey}` });
-    } else if (torrent.state === 'pausedDL' || torrent.state === 'pausedUP') {
-      buttons.push({ text: '▶️ Старт', callback_data: `torrent_resume:${torrentKey}` });
+      row1.push({ text: '⏸️ Пауза', callback_data: `torrent_pause:${torrentKey}` });
+    } else if (torrent.state === 'pausedDL' || torrent.state === 'pausedUP' || torrent.state === 'stoppedDL' || torrent.state === 'stoppedUP') {
+      row1.push({ text: '▶️ Старт', callback_data: `torrent_resume:${torrentKey}` });
     }
     
-    // Single delete button that opens submenu
-    buttons.push({ text: '🗑️ Удалить', callback_data: `torrent_delete_menu:${torrentKey}` });
+    // Delete button that opens submenu
+    row1.push({ text: '🗑️ Удалить', callback_data: `torrent_delete_menu:${torrentKey}` });
+
+    // Priority buttons
+    row2.push({ text: '🔼 Max', callback_data: `torrent_priority_max:${torrentKey}` });
+    row2.push({ text: '🔽 Min', callback_data: `torrent_priority_min:${torrentKey}` });
+
+    const keyboard = [row1];
+    if (row2.length > 0) keyboard.push(row2);
 
     return { 
-      inline_keyboard: [buttons]
+      inline_keyboard: keyboard
     };
   }
 
@@ -133,6 +149,33 @@ export class TorrentsCommand {
           { text: '❌ Отмена', callback_data: `torrent_cancel:${torrentKey}` }
         ]
       ]
+    };
+  }
+
+  private createSmartBulkKeyboard(torrents: any[]) {
+    const activeTorrents = torrents.filter(t => 
+      t.state === 'downloading' || t.state === 'uploading' || t.state === 'stalledDL' || t.state === 'stalledUP' || t.state === 'queuedDL' || t.state === 'queuedUP'
+    );
+    const pausedTorrents = torrents.filter(t => 
+      t.state === 'pausedDL' || t.state === 'pausedUP' || t.state === 'stoppedDL' || t.state === 'stoppedUP'
+    );
+
+    const buttons = [];
+
+    if (activeTorrents.length > 0 && pausedTorrents.length === 0) {
+      // Все активные - только кнопка паузы
+      buttons.push({ text: '⏸️ Pause All', callback_data: 'bulk_pause_all' });
+    } else if (pausedTorrents.length > 0 && activeTorrents.length === 0) {
+      // Все на паузе - только кнопка старт
+      buttons.push({ text: '▶️ Resume All', callback_data: 'bulk_resume_all' });
+    } else if (activeTorrents.length > 0 && pausedTorrents.length > 0) {
+      // Смешанное состояние - обе кнопки
+      buttons.push({ text: '⏸️ Pause All', callback_data: 'bulk_pause_all' });
+      buttons.push({ text: '▶️ Resume All', callback_data: 'bulk_resume_all' });
+    }
+
+    return {
+      inline_keyboard: buttons.length > 0 ? [buttons] : []
     };
   }
 }
