@@ -106,16 +106,6 @@ export class QBittorrentService {
     }
   }
 
-  formatSpeed(bytes: number): string {
-    if (bytes === 0) return '0 B/s';
-    
-    const k = 1024;
-    const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  }
-
   async pauseTorrent(hash: string): Promise<boolean> {
     try {
       await this.login();
@@ -210,6 +200,51 @@ export class QBittorrentService {
     }
   }
 
+  async getGlobalSpeedLimits(): Promise<{ dlLimit: number; upLimit: number }> {
+    try {
+      const response = await this.client.get('/api/v2/transfer/info');
+      return {
+        dlLimit: response.data.dl_rate_limit || 0, // in bytes/sec, 0 = unlimited
+        upLimit: response.data.up_rate_limit || 0
+      };
+    } catch (error) {
+      console.error('Failed to get speed limits:', error);
+      return { dlLimit: 0, upLimit: 0 };
+    }
+  }
+
+  async setGlobalDownloadLimit(limitMBps: number): Promise<boolean> {
+    try {
+      const limitBytes = limitMBps <= 0 ? 0 : limitMBps * 1024 * 1024; // Convert MB/s to bytes/s
+      const params = new URLSearchParams();
+      params.append('limit', limitBytes.toString());
+      
+      const response = await this.client.post('/api/v2/transfer/setDownloadLimit', params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      return response.status === 200;
+    } catch (error) {
+      console.error('Failed to set download limit:', error);
+      return false;
+    }
+  }
+
+  async setGlobalUploadLimit(limitMBps: number): Promise<boolean> {
+    try {
+      const limitBytes = limitMBps <= 0 ? 0 : limitMBps * 1024 * 1024; // Convert MB/s to bytes/s
+      const params = new URLSearchParams();
+      params.append('limit', limitBytes.toString());
+      
+      const response = await this.client.post('/api/v2/transfer/setUploadLimit', params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      return response.status === 200;
+    } catch (error) {
+      console.error('Failed to set upload limit:', error);
+      return false;
+    }
+  }
+
   formatSize(bytes: number): string {
     if (bytes === 0) return '0 B';
     
@@ -218,5 +253,10 @@ export class QBittorrentService {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  formatSpeed(bytesPerSec: number): string {
+    if (bytesPerSec === 0) return '0 B/s';
+    return this.formatSize(bytesPerSec) + '/s';
   }
 }

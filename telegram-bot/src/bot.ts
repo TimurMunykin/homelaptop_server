@@ -5,6 +5,7 @@ import { TorrentsCommand } from './commands/torrents';
 import { SearchCommand } from './commands/search';
 import { SystemCommand } from './commands/system';
 import { TrackersCommand } from './commands/trackers';
+import { SpeedCommand } from './commands/speed';
 
 class HomeServerBot {
   private bot: Telegraf;
@@ -13,6 +14,7 @@ class HomeServerBot {
   private searchCommand: SearchCommand;
   private systemCommand: SystemCommand;
   private trackersCommand: TrackersCommand;
+  private speedCommand: SpeedCommand;
 
   constructor() {
     validateConfig();
@@ -23,6 +25,7 @@ class HomeServerBot {
     this.searchCommand = new SearchCommand();
     this.systemCommand = new SystemCommand();
     this.trackersCommand = new TrackersCommand();
+    this.speedCommand = new SpeedCommand();
     
     this.setupMiddleware();
     this.setupCommands();
@@ -59,6 +62,7 @@ class HomeServerBot {
         `/torrents - Show active torrents\n` +
         `/search <query> - Search torrents via Prowlarr\n` +
         `/trackers - Show available trackers\n` +
+        `/speed - Control download/upload speed limits\n` +
         `/system - Show system information\n` +
         `/chatid - Show your Chat ID for configuration`
       );
@@ -71,6 +75,7 @@ class HomeServerBot {
         `/torrents - Show active torrents in qBittorrent\n` +
         `/search <query> - Search for torrents via Prowlarr\n` +
         `/trackers - Show available trackers list\n` +
+        `/speed - Control global download/upload speed limits\n` +
         `/system - Show system information (CPU, RAM, disk)\n` +
         `/chatid - Show your Chat ID for configuration\n\n` +
         `💡 Use /start to see the welcome message again.`
@@ -81,6 +86,7 @@ class HomeServerBot {
     this.bot.command('torrents', (ctx) => this.torrentsCommand.execute(ctx));
     this.bot.command('search', (ctx) => this.searchCommand.execute(ctx));
     this.bot.command('trackers', (ctx) => this.trackersCommand.execute(ctx));
+    this.bot.command('speed', (ctx) => this.speedCommand.execute(ctx));
     this.bot.command('system', (ctx) => this.systemCommand.execute(ctx));
     this.bot.command('chatid', (ctx) => {
       const chatId = ctx.chat?.id;
@@ -317,6 +323,59 @@ class HomeServerBot {
               await ctx.editMessageReplyMarkup(newKeyboard);
             } else {
               await ctx.reply('❌ Failed to resume all torrents');
+            }
+          }
+        }
+
+        // Handle speed control callbacks
+        else if (callbackData?.startsWith('speed_')) {
+          const qb = this.torrentsCommand['qbittorrent'];
+          
+          if (callbackData === 'speed_dl_plus') {
+            await ctx.answerCbQuery('⬇️ Increasing download limit...');
+            const limits = await qb.getGlobalSpeedLimits();
+            const currentMBps = limits.dlLimit > 0 ? Math.round(limits.dlLimit / (1024 * 1024)) : 0;
+            const newLimit = currentMBps === 0 ? 1 : currentMBps + 1;
+            const success = await qb.setGlobalDownloadLimit(newLimit);
+            if (success) {
+              await this.speedCommand.updateSpeedKeyboard(ctx);
+            }
+          } else if (callbackData === 'speed_dl_minus') {
+            await ctx.answerCbQuery('⬇️ Decreasing download limit...');
+            const limits = await qb.getGlobalSpeedLimits();
+            const currentMBps = limits.dlLimit > 0 ? Math.round(limits.dlLimit / (1024 * 1024)) : 0;
+            const newLimit = Math.max(0, currentMBps - 1);
+            const success = await qb.setGlobalDownloadLimit(newLimit);
+            if (success) {
+              await this.speedCommand.updateSpeedKeyboard(ctx);
+            }
+          } else if (callbackData === 'speed_up_plus') {
+            await ctx.answerCbQuery('⬆️ Increasing upload limit...');
+            const limits = await qb.getGlobalSpeedLimits();
+            const currentMBps = limits.upLimit > 0 ? Math.round(limits.upLimit / (1024 * 1024)) : 0;
+            const newLimit = currentMBps === 0 ? 1 : currentMBps + 1;
+            const success = await qb.setGlobalUploadLimit(newLimit);
+            if (success) {
+              await this.speedCommand.updateSpeedKeyboard(ctx);
+            }
+          } else if (callbackData === 'speed_up_minus') {
+            await ctx.answerCbQuery('⬆️ Decreasing upload limit...');
+            const limits = await qb.getGlobalSpeedLimits();
+            const currentMBps = limits.upLimit > 0 ? Math.round(limits.upLimit / (1024 * 1024)) : 0;
+            const newLimit = Math.max(0, currentMBps - 1);
+            const success = await qb.setGlobalUploadLimit(newLimit);
+            if (success) {
+              await this.speedCommand.updateSpeedKeyboard(ctx);
+            }
+          } else if (callbackData === 'speed_refresh') {
+            await ctx.answerCbQuery('🔄 Refreshing...');
+            await this.speedCommand.updateSpeedKeyboard(ctx);
+          } else if (callbackData === 'speed_unlimited') {
+            await ctx.answerCbQuery('♾️ Removing limits...');
+            const dlSuccess = await qb.setGlobalDownloadLimit(0);
+            const upSuccess = await qb.setGlobalUploadLimit(0);
+            if (dlSuccess && upSuccess) {
+              await this.speedCommand.updateSpeedKeyboard(ctx);
             }
           }
         }
